@@ -1,0 +1,49 @@
+name: Proofed
+
+# Every push to a pull request: Kane checks the scenarios the change touches, and when one fails,
+# Codex fixes it and Kane checks the fix before it is pushed.
+on:
+  pull_request:
+  issue_comment:
+    types: [created, edited]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  statuses: write
+  id-token: write
+
+jobs:
+  proofed:
+    name: Proofed
+    if: >-
+      github.event_name == 'pull_request' || (
+        github.event.issue.pull_request && ((
+          github.event.action == 'created' &&
+          contains(github.event.comment.body, '/proofed') &&
+          contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association)
+        ) || (
+          github.event.action == 'edited' &&
+          github.event.comment.user.type == 'Bot' &&
+          contains(github.event.comment.body, '<!-- proofed -->') &&
+          contains(github.event.comment.body, '- [x] **Fix with Codex**')
+        ))
+      )
+    runs-on: [self-hosted, macOS, ARM64, proofed-electron]
+    timeout-minutes: 45
+    concurrency:
+      group: proofed-${{ github.event.pull_request.number || github.event.issue.number }}
+      cancel-in-progress: ${{ github.event_name == 'pull_request' && github.actor != 'proofed-by-kane[bot]' }}
+    steps:
+      - uses: t1dem/proofed@night-work
+        with:
+          target: desktop
+          launch: bash .proofed/zettlr/launch.sh
+          cdp-endpoint: http://127.0.0.1:9325
+          install: corepack enable && yarn install --immutable
+          build: NODE_ENV=production node .proofed/zettlr/build.cjs
+          lt-username: ${{ secrets.LT_USERNAME }}
+          lt-access-key: ${{ secrets.LT_ACCESS_KEY }}
+          codex-auth-json: ${{ secrets.CODEX_AUTH_JSON }}
+          vars: ${{ toJSON(vars) }}
