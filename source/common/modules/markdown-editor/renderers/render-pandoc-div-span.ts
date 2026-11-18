@@ -83,6 +83,11 @@ function showDivSpanDecorations (view: EditorView): RangeSet<Decoration> {
           default: return
         }
 
+        // CodeMirror mark decorations require a nonempty range.
+        if (from >= to) {
+          return
+        }
+
         // Parse the classes and other attributes to render in the decoration.
         const attributes = attrs ? parseLinkAttributes(view.state.sliceDoc(attrs.from, attrs.to)) : {}
         const classes = attributes.classes ?? []
