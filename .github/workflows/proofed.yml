@@ -36,7 +36,7 @@ jobs:
       group: proofed-${{ github.event.pull_request.number || github.event.issue.number }}
       cancel-in-progress: ${{ github.event_name == 'pull_request' && github.actor != 'proofed-by-kane[bot]' }}
     steps:
-      - uses: t1dem/proofed@night-work
+      - uses: t1dem/proofed@main
         with:
           target: desktop
           launch: bash .proofed/zettlr/launch.sh
